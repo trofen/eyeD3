@@ -1047,11 +1047,15 @@ class Tag:
        # %t - title
        # %n - track number
        # %N - track total
+       # %Y - year
+       # %G - genre
        s = self._subst(pattern, "%A", self.getArtist());
        s = self._subst(s, "%a", self.getAlbum());
        s = self._subst(s, "%t", self.getTitle());
        s = self._subst(s, "%n", self._prettyTrack(self.getTrackNum()[0]));
        s = self._subst(s, "%N", self._prettyTrack(self.getTrackNum()[1]));
+       s = self._subst(s, "%Y", self.getYear());
+       s = self._subst(s, "%G", self.getGenre().name);
        return s;
 
    def _prettyTrack(self, track):
