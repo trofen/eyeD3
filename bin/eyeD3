@@ -288,6 +288,16 @@ Run with --help/-h for usage information or see the man page 'eyeD3(1)'
                    default=0,
                    help="Update the tag regardless of whether any frames are "\
                         "set with new values.");
+   grp3.add_option("--show-title", action="store_true",
+                   dest="show_title", help="Show title only");
+   grp3.add_option("--show-artist", action="store_true",
+                   dest="show_artist", help="Show artist only");
+   grp3.add_option("--show-album", action="store_true",
+                   dest="show_album", help="Show album only");
+   grp3.add_option("--show-year", action="store_true",
+                   dest="show_year", help="Show year only");
+   grp3.add_option("--show-duration", action="store_true",
+                   dest="show_duration", help="Show duration only(in seconds)");
    grp3.add_option("--no-color", action="store_true",
                    dest="nocolor", help="Disable color output");
    grp3.add_option("--no-zero-padding", action="store_false",
@@ -500,11 +510,13 @@ class EyeD3Driver(TagDriverBase):
        TagDriverBase.__init__(self, opts)
 
    def handleFile(self, f):
-      self.printHeader(f);
-      TagDriverBase.handleFile(self, f)
-
-      self.printAudioInfo(self.audioFile);
-
+      if not (options.show_title or options.show_album or options.show_artist or options.show_year or options.show_duration):
+	 self.printHeader(f);
+      TagDriverBase.handleFile(self, f);
+      if not (options.show_title or options.show_album or options.show_artist or options.show_year or options.show_duration):
+         self.printAudioInfo(self.audioFile);
+      if options.show_duration:
+         self.printAudioInfoDur(self.audioFile);
       if not self.tag:
          printError("No ID3 %s tag found!" %\
                     eyeD3.utils.versionToString(self.opts.tagVersion));
@@ -563,7 +575,16 @@ class EyeD3Driver(TagDriverBase):
       # Print tag.
       try:
           if self.tag:
-             self.printTag(self.tag);
+             if options.show_title:
+                self.printTagShowTitle(self.tag);
+             elif options.show_album:
+		self.printTagShowAlbum(self.tag);
+             elif options.show_artist:
+                self.printTagShowArtist(self.tag);
+             elif options.show_year:
+                self.printTagShowYear(self.tag);
+	     elif not options.show_duration:
+		self.printTag(self.tag);
              if self.opts.verbose:
                 printMsg("-" * 79);
                 printMsg("ID3 Frames:");
@@ -917,6 +938,9 @@ class EyeD3Driver(TagDriverBase):
                                 colors["header"], size_str, colors["normal"]);
       print ("-" * 79);
 
+   def printAudioInfoDur(self, audioInfo):
+      print audioInfo.getPlayTime();
+
    def printAudioInfo(self, audioInfo):
       if isinstance(audioInfo, eyeD3.Mp3AudioFile):
          print boldText("Time: ") +\
@@ -928,6 +952,21 @@ class EyeD3Driver(TagDriverBase):
       else:
          # Handle what it is known and silently ignore anything else.
          pass;
+   def printTagShowTitle(self, tag):
+      if isinstance(tag, eyeD3.Tag):
+         printMsg("%s" %  tag.getTitle().encode(ENCODING, "replace"));
+
+   def printTagShowAlbum(self, tag):
+      if isinstance(tag, eyeD3.Tag):
+         printMsg("%s" %  tag.getAlbum().encode(ENCODING, "replace"));
+
+   def printTagShowArtist(self, tag):
+      if isinstance(tag, eyeD3.Tag):
+         printMsg("%s" %  tag.getArtist().encode(ENCODING, "replace"));
+
+   def printTagShowYear(self, tag):
+      if isinstance(tag, eyeD3.Tag):
+         printMsg("%s" %  tag.getYear());
 
    def printTag(self, tag):
       if isinstance(tag, eyeD3.Tag):
@@ -1149,6 +1188,7 @@ def main():
 
    # Process command line.
    optParser = getOptionParser();
+   global options;
    (options, args) = optParser.parse_args();
 
    # Handle -l, --list-genres
